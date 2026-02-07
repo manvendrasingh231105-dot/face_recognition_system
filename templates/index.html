@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Face Recognition Attendance</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<h1>Face Recognition Attendance System</h1>
+
+<div class="container">
+
+    <div class="video">
+        <img src="/video_feed" alt="Video Feed">
+    </div>
+
+    <div class="right-panel">
+        <div class="attendance-box">
+            <h2>Attendance Records</h2>
+            <table id="attendance-table"></table>
+
+            <button onclick="downloadCSV()">Download CSV</button>
+            <button onclick="shutdownServer()" class="danger">Shutdown Server</button>
+        </div>
+
+        <div class="register-box">
+            <h2>Register New Student</h2>
+            <p>Look straight into the camera, enter name, then click Register.</p>
+            <input type="text" id="nameInput" placeholder="Enter full name">
+            <button onclick="registerFace()">Register Face</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+async function loadAttendance() {
+    const res = await fetch("/get_attendance");
+    const data = await res.json();
+
+    const table = document.getElementById("attendance-table");
+    table.innerHTML = "";
+
+    data.forEach((row, idx) => {
+        const tr = document.createElement("tr");
+        row.forEach(col => {
+            const td = document.createElement("td");
+            td.innerText = col;
+            tr.appendChild(td);
+        });
+        table.appendChild(tr);
+    });
+}
+
+// Refresh attendance every 2 seconds
+setInterval(loadAttendance, 2000);
+loadAttendance();
+
+function downloadCSV() {
+    window.location.href = "/download";
+}
+
+async function shutdownServer() {
+    if (confirm("Are you sure you want to stop the server?")) {
+        await fetch("/shutdown", { method: "POST" });
+        alert("Server stopped. Close this tab.");
+    }
+}
+
+async function registerFace() {
+    const nameInput = document.getElementById("nameInput");
+    const name = nameInput.value.trim();
+
+    if (!name) {
+        alert("Please enter a name first.");
+        return;
+    }
+
+    const res = await fetch("/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name })
+    });
+
+    const data = await res.json();
+    alert(data.message || "Done");
+
+    if (data.success) {
+        nameInput.value = "";
+    }
+}
+</script>
+
+</body>
+</html>
+
